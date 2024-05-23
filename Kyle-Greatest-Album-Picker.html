@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0">
+<title>Picker</title>
+<style>
+body {
+    background:#FFF;
+    color:#000;
+    font-family:verdana, sans-serif;
+    font-size:10pt;
+    margin:0;
+    padding:10px;
+}
+
+a:link, a:visited {
+    color:#008;
+    font-weight:bold;
+    text-decoration:none;
+}
+
+a:active, a:hover {
+    color:#ACF;
+}
+
+.info {
+    font-weight:bold;
+}
+
+button {
+    font-family:inherit;
+    cursor:pointer;
+    border:0;
+    border-radius:3px;
+    padding:0.3em 0.5em;
+    background:#CCC;
+    color:#000;
+}
+
+button:hover {
+    background:#DDD;
+}
+
+button.disabled {
+    background:#DDD;
+    color:#888;
+    cursor:not-allowed;
+}
+
+button.disabled:hover {
+    background:#DDD;
+}
+
+#container {
+    position:relative;
+    margin-left:-10px;
+    margin-right:-10px;
+    padding:10px;
+    overflow:hidden;
+}
+
+@media (min-width:1024px) {
+    /* Put the found favorites beside the picking div when the window is sufficiently large */
+    #picking {
+        float:left;
+        width:636px;
+    }
+
+    #secondary {
+        margin-left:646px;
+    }
+}
+
+@media (min-width:1300px) {
+    /* Once we get to the point where 636px is less than half of the width of the screen, make the picking div just take up half */
+    #picking {
+        width:50%;
+    }
+
+    #secondary {
+        margin-left:51%;
+    }
+}
+
+#pick {
+    background:#58F;
+    color:#FFF;
+    font-size:larger;
+    font-weight:bold;
+    width:6em;
+    border-radius:5px;
+    margin-right:10px;
+}
+
+#pick.disabled {
+    background:#ACF;
+}
+
+#pick:hover {
+    background:#ACF;
+}
+
+.item-list {
+    padding:0;
+    list-style-type:none;
+    line-height:100px;
+}
+
+.item-list li {
+    margin:0;
+    display:inline-block;
+    height:300px;
+    width:300px;
+    line-height:300px;
+    border:3px solid transparent;
+    text-align:center;
+    position:relative;
+    vertical-align:top;
+    overflow:visible;
+    border-radius:100%;
+    background:#F7F7F7;
+    color:#000;
+}
+
+.item-list li img {
+    vertical-align:middle;
+    max-height:100%;
+    max-width:100%;
+}
+
+.item-list li span {
+    display:inline-block;
+    vertical-align:middle;
+    line-height:1.2;
+}
+
+@media (max-width:636px) {
+    .item-list {
+        line-height:75px;
+    }
+
+    .item-list li {
+        line-height:75px;
+        height:75px;
+        width:75px;
+    }
+}
+
+@media (max-width:423px) {
+    .item-list {
+        line-height:50px;
+    }
+
+    .item-list li {
+        line-height:50px;
+        height:50px;
+        width:50px;
+    }
+}
+
+#evaluating li {
+    cursor:pointer;
+}
+
+#favorites li {
+    cursor:move;
+}
+
+.item-list li:hover {
+    background:#CDF;
+}
+
+.item-list.sorting li:hover {
+    background:#F7F7F7;
+}
+
+#evaluating li.selected {
+    border:3px solid #7AC;
+}
+
+#evaluating, #buttons {
+    text-align:center;
+    margin:auto;
+}
+
+#evaluating li.notice {
+    width:auto;
+    height:auto;
+    max-width:260px;
+    margin:auto;
+    background:#F7F7F7;
+    border-radius:10px;
+    padding:30px 30px;
+    color:#000;
+    text-align:center;
+    line-height:1.4;
+    cursor:auto;
+    font-size:8pt;
+}
+
+#buttons {
+    margin-top:30px;
+    position:relative;
+    z-index:3;
+}
+</style>
+</head>
+<body>
+<h1>Kyle's Greatest Albums</h1>
+
+<p>Kyle's ranking of the greatest albums of all time.</p>
+
+<div id="container">
+
+<div id="picking">
+<ul id="evaluating" class="item-list">
+</ul>
+
+<p id="buttons"><button id="pick">Pick</button> <button id="pass">Pass</button> <button id="undo">Undo</button> <button id="redo">Redo</button></p>
+</div>
+
+<div id="secondary">
+<h2>Found favorites</h2>
+
+<ol id="favorites" class="item-list">
+</ol>
+</div>
+</div>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="picker.js"></script>
+<script src="picker-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.7.0/Sortable.min.js"></script>
+<script>
+'use strict';
+
+var items = [
+   		{id: 'Bear Creek', name: 'Bear Creek - Brandi Carlile', image: 'Bear Creek.jpg'},
+	{id: 'Red', name: 'Red - Taylor Swift', image: 'Red.jpg'},
+	{id: 'Folklore', name: 'Folklore - Taylor Swift', image: 'Folklore.jpg'},
+	{id: 'Reputation', name: 'Reputation - Taylor Swift', image: 'Reputation.jpg'},
+	{id: '21', name: '21 - Adele', image: '21.jpg'},
+	{id: 'Move Along', name: 'Move Along - All-American Rejects', image: 'Move Along.jpg'},
+	{id: 'Oh, What A Life', name: 'Oh, What A Life - American Authors', image: 'Oh, What A Life.jpg'},
+	{id: 'Dangerous Woman', name: 'Dangerous Woman - Ariana Grande', image: 'Dangerous Woman.jpg'},
+	{id: 'thank u, next', name: 'thank u, next - Ariana Grande', image: 'thank u, next.jpg'},
+	{id: 'Stories', name: 'Stories - Avicii', image: 'Stories.jpg'},
+	{id: 'Let Go', name: 'Let Go - Avril Levine', image: 'Let Go.jpg'},
+	{id: 'Millenium', name: 'Millenium - Backstreet Boys', image: 'Millenium.jpg'},
+	{id: 'Black & Blue', name: 'Black & Blue - Backstreet Boys', image: 'Black & Blue.jpg'},
+	{id: 'Duets', name: 'Duets - Barbra Streisand', image: 'Duets.jpg'},
+	{id: 'Doom Days', name: 'Doom Days - Bastille', image: 'Doom Days.jpg'},
+	{id: 'Abbey Road', name: 'Abbey Road - Beatles', image: 'Abbey Road.jpg'},
+	{id: 'White album', name: 'White album - Beatles', image: 'White album.jpg'},
+	{id: 'Friendly Fire', name: 'Friendly Fire - Ben Abraham', image: 'Friendly Fire.jpg'},
+	{id: 'Sing to Me Instead', name: 'Sing to Me Instead - Ben Platt', image: 'Sing to Me Instead.jpg'},
+	{id: 'Brand New', name: 'Brand New - Ben Rector', image: 'Brand New.jpg'},
+	{id: 'Fireworks & Rollerblades', name: 'Fireworks & Rollerblades - Benson Boone', image: 'Fireworks & Rollerblades.jpg'},
+	{id: 'Tchaikovsky & Dvorak: String Serenades', name: 'Tchaikovsky & Dvorak: String Serenades - Berlin Philharmonic & Herbert von Karajan', image: 'Tchaikovsky & Dvorak_ String Serenades.jpg'},
+	{id: 'I Am... Sasha Fierce', name: 'I Am... Sasha Fierce - Beyonce', image: 'I Am... Sasha Fierce.jpg'},
+	{id: 'Cowboy Carter', name: 'Cowboy Carter - Beyonce', image: 'Cowboy Carter.jpg'},
+	{id: 'Happier Than Ever', name: 'Happier Than Ever - Billie Eilish', image: 'Happier Than Ever.jpg'},
+	{id: 'When We All Fall Asleep, Where Do We Go', name: 'When We All Fall Asleep, Where Do We Go - Billie Eilish', image: 'When We All Fall Asleep, Where Do We Go.jpg'},
+	{id: 'By the Way, I Forgive You', name: 'By the Way, I Forgive You - Brandi Carlile', image: 'By the Way, I Forgive You.jpg'},
+	{id: 'The Color Purple', name: 'The Color Purple - Revival Cast', image: 'The Color Purple.jpg'},
+	{id: 'Doo-Wops & Hooligans', name: 'Doo-Wops & Hooligans - Bruno Mars', image: 'Doo-Wops & Hooligans.jpg'},
+	{id: 'Only Human', name: 'Only Human - Calum Scott', image: 'Only Human.jpg'},
+	{id: 'Requiem', name: 'Requiem - John Rutter', image: 'Requiem.jpg'},
+	{id: 'Prom', name: 'Prom - Original Broadway Cast', image: 'Prom.jpg'},
+	{id: 'Falling Into You', name: 'Falling Into You - Celine Dion', image: 'Falling Into You.jpg'},
+	{id: 'The Rise and Fall of a Midwest Princess', name: 'The Rise and Fall of a Midwest Princess - Chappell Roan', image: 'The Rise and Fall of a Midwest Princess.jpg'},
+	{id: 'Nine Track Mind', name: 'Nine Track Mind - Charlie Puth', image: 'Nine Track Mind.jpg'},
+	{id: 'Fly', name: 'Fly - The Chicks', image: 'Fly.jpg'},
+	{id: 'Home', name: 'Home - The Chicks', image: 'Home.jpg'},
+	{id: 'Stripped', name: 'Stripped - Christina Aguilera', image: 'Stripped.jpg'},
+	{id: 'Pictures of Mountains', name: 'Pictures of Mountains - Cody Fry', image: 'Pictures of Mountains.jpg'},
+	{id: 'Viva la vida', name: 'Viva la vida - Coldplay', image: 'Viva la vida.jpg'},
+	{id: 'X & Y', name: 'X & Y - Coldplay', image: 'X & Y.jpg'},
+	{id: 'Kinky Boots', name: 'Kinky Boots - Original Broadway Cast', image: 'Kinky Boots.jpg'},
+	{id: 'Postcards in the Sky', name: 'Postcards in the Sky - David Archuleta', image: 'Postcards in the Sky.jpg'},
+	{id: 'Amor mi fa cantare', name: 'Amor mi fa cantare - Stefano Donaudy; Robert Guarino', image: 'Amor mi fa cantare.jpg'},
+	{id: 'Intertwined', name: 'Intertwined - Dodie', image: 'Intertwined.jpg'},
+	{id: 'You', name: 'You - Dodie', image: 'You.jpg'},
+	{id: 'x', name: 'x - Ed Sheeran', image: 'x.jpg'},
+	{id: 'Bright Star', name: 'Bright Star - Original Broadway Cast', image: 'Bright Star.jpg'},
+	{id: 'Jerome Kern Songbook', name: 'Jerome Kern Songbook - Ella Fitzgerald', image: 'Jerome Kern Songbook.jpg'},
+	{id: 'Cote D\'Azur Concerts on Verve', name: 'Cote D\'Azur Concerts on Verve - Ella Fitzgerald & Duke Ellington', image: 'Concerts on Verve.jpg'},
+	{id: 'Ella and Louis Again', name: 'Ella and Louis Again - Ella Fitzgerald & Louis Armstrong', image: 'Ella and Louis Again.jpg'},
+	{id: 'Goodbye Yellow Brick Road', name: 'Goodbye Yellow Brick Road - Elton John', image: 'Goodbye Yellow Brick Road.jpg'},
+	{id: 'Our Version of Events', name: 'Our Version of Events - Emeli Sande', image: 'Our Version of Events.jpg'},
+	{id: 'The Marshall Mathers LP2', name: 'The Marshall Mathers LP2 - Eminem', image: 'The Marshall Mathers LP2.jpg'},
+	{id: 'Fallen', name: 'Fallen - Evanescence', image: 'Fallen.jpg'},
+	{id: 'From Under the Cork Tree', name: 'From Under the Cork Tree - Fall Out Boy', image: 'From Under the Cork Tree.jpg'},
+	{id: 'Infinity on High', name: 'Infinity on High - Fall Out Boy', image: 'Infinity on High.jpg'},
+	{id: 'The Dutchess', name: 'The Dutchess - Fergie', image: 'The Dutchess.jpg'},
+	{id: 'All the Feels', name: 'All the Feels - Fitz and the Tantrums', image: 'All the Feels.jpg'},
+	{id: 'Fitz & the Tantrums', name: 'Fitz & the Tantrums - Fitz and the Tantrums', image: 'Fitz & the Tantrums.jpg'},
+	{id: 'Fleet Foxes', name: 'Fleet Foxes - Fleet Foxes', image: 'Fleet Foxes.jpg'},
+	{id: 'Lungs', name: 'Lungs - Florence + the Machine', image: 'Lungs.jpg'},
+	{id: 'One by One', name: 'One by One - Foo Fighters', image: 'One by One.jpg'},
+	{id: 'channel ORANGE', name: 'channel ORANGE - Frank Ocean', image: 'channel ORANGE.jpg'},
+	{id: 'The Fray', name: 'The Fray - The Fray', image: 'The Fray.jpg'},
+	{id: 'How to Save a Life', name: 'How to Save a Life - The Fray', image: 'How to Save a Life.jpg'},
+	{id: 'Some Nights', name: 'Some Nights - Fun.', image: 'Some Nights.jpg'},
+	{id: 'We are Young', name: 'We are Young - Fun.', image: 'We are Young.jpg'},
+	{id: 'Sweeter', name: 'Sweeter - Gavin Degraw', image: 'Sweeter.jpg'},
+	{id: 'Good Morning Revival', name: 'Good Morning Revival - Good Charlotte', image: 'Good Morning Revival.jpg'},
+	{id: 'Is There Anybody Out There', name: 'Is There Anybody Out There - A Great Big World', image: 'Is There Anybody Out There.jpg'},
+	{id: 'Fine Line', name: 'Fine Line - Harry Styles', image: 'Fine Line.jpg'},
+	{id: 'Harry\'s House', name: 'Harry\'s House - Harry Styles', image: 'Harry\'s House.jpg'},
+	{id: 'Whatever', name: 'Whatever - Hot Chelle Rae', image: 'Whatever.jpg'},
+	{id: 'Hozier', name: 'Hozier - Hozier', image: 'Hozier.jpg'},
+	{id: 'Wasteland, Baby!', name: 'Wasteland, Baby! - Hozier', image: 'Wasteland, Baby!.jpg'},
+	{id: 'Night Visions', name: 'Night Visions - Imagine Dragons', image: 'Night Visions.jpg'},
+	{id: 'Stranger Songs', name: 'Stranger Songs - Ingrid Michaelson', image: 'Stranger Songs.jpg'},
+	{id: 'Choas and the Calm', name: 'Choas and the Calm - James Bay', image: 'Choas and the Calm.jpg'},
+	{id: 'Flight', name: 'Flight - James Francies', image: 'Flight.jpg'},
+	{id: 'Jason Derulo', name: 'Jason Derulo - Jason Derulo', image: 'Jason Derulo.jpg'},
+	{id: 'We Sing. We Dance. We Steal Things.', name: 'We Sing. We Dance. We Steal Things. - Jason Mraz', image: 'We Sing. We Dance. We Steal Things.jpg'},
+	{id: 'Who Hurt You?', name: 'Who Hurt You? - Jensen McRae', image: 'Who Hurt You?.jpg'},
+	{id: 'brent ii', name: 'brent ii - Jeremy Zucker & Celsey Culter', image: 'brent ii.jpg'},
+	{id: 'I Cry When I Laugh', name: 'I Cry When I Laugh - Jess Glyne', image: 'I Cry When I Laugh.jpg'},
+	{id: 'Georgia Pond', name: 'Georgia Pond - Johnnyswim', image: 'Georgia Pond.jpg'},
+	{id: 'The Human Condition', name: 'The Human Condition - Jon Bellion', image: 'The Human Condition.jpg'},
+	{id: 'Blue', name: 'Blue - Joni Mitchell', image: 'Blue.jpg'},
+	{id: 'Dark in the City', name: 'Dark in the City - Jordy Searcy', image: 'Dark in the City.jpg'},
+	{id: 'Human Now', name: 'Human Now - Joshua Speers', image: 'Human Now.jpg'},
+	{id: 'Escape', name: 'Escape - Journey', image: 'Escape.jpg'},
+	{id: 'Pep Talks', name: 'Pep Talks - Judah & the Lion', image: 'Pep Talks.jpg'},
+	{id: 'Complete Decca Masters', name: 'Complete Decca Masters - Judy Garland', image: 'Complete Decca Masters.jpg'},
+	{id: 'Cheers', name: 'Cheers - Jukebox the Ghost', image: 'Cheers.jpg'},
+	{id: 'Jukebox the Ghost', name: 'Jukebox the Ghost - Jukebox the Ghost', image: 'Jukebox the Ghost.jpg'},
+	{id: 'Let Live & Let Ghosts', name: 'Let Live & Let Ghosts - Jukebox the Ghost', image: 'Let Live & Let Ghosts.jpg'},
+	{id: 'Inner Monologue', name: 'Inner Monologue - Juilia Michaels', image: 'Inner Monologue.jpg'},
+	{id: 'The 20/20 Experience', name: 'The 20/20 Experience - Justin Timberlake', image: 'The 20/20 Experience.jpg'},
+	{id: 'Golden Hour', name: 'Golden Hour - Kacey Musgraves', image: 'Golden Hour.jpg'},
+	{id: 'Pagaent Material', name: 'Pagaent Material - Kacey Musgraves', image: 'Pagaent Material.jpg'},
+	{id: 'Same Trailer Different Park', name: 'Same Trailer Different Park - Kacey Musgraves', image: 'Same Trailer Different Park.jpg'},
+	{id: 'My Beautiful Dark Twisted Fantasy', name: 'My Beautiful Dark Twisted Fantasy - Kanye West', image: 'My Beautiful Dark Twisted Fantasy.jpg'},
+	{id: 'Teenage Dream', name: 'Teenage Dream - Katy Perry', image: 'Teenage Dream.jpg'},
+	{id: 'Animal', name: 'Animal - Ke$ha', image: 'Animal.jpg'},
+	{id: 'Somewhere Only We Know', name: 'Somewhere Only We Know - Keane', image: 'Somewhere Only We Know.jpg'},
+	{id: 'kelsea', name: 'kelsea - Kelsea Bellerini', image: 'kelsea.jpg'},
+	{id: 'Black Panther The Album', name: 'Black Panther The Album - Kendrick Lamar', image: 'Black Panther The Album.jpg'},
+	{id: 'Damn.', name: 'Damn. - Kendrick Lamar', image: 'Damn.jpg'},
+	{id: 'Celebrate Me Home', name: 'Celebrate Me Home - Kenny Loggins', image: 'Celebrate Me Home.jpg'},
+	{id: 'American Teen', name: 'American Teen - Khalid', image: 'American Teen.jpg'},
+	{id: 'Free Spirit', name: 'Free Spirit - Khalid', image: 'Free Spirit.jpg'},
+	{id: 'Fun Machine', name: 'Fun Machine - Lake Street Dive', image: 'Fun Machine.jpg'},
+	{id: 'The Last Five Years', name: 'The Last Five Years - Original Broadway Cast', image: 'The Last Five Years.jpg'},
+	{id: '~How I\'m Feeling~', name: '~How I\'m Feeling~ - Lauv', image: '~How I\'m Feeling~.jpg'},
+	{id: 'I met you when I was 18.', name: 'I met you when I was 18. - Lauv', image: 'I met you when I was 18..jpg'},
+	{id: 'Breakfast', name: 'Breakfast - Lawrence', image: 'Breakfast.jpg'},
+	{id: 'It\'s Not All About You', name: 'It\'s Not All About You - Lawrence', image: 'It\'s Not All About You.jpg'},
+	{id: '23', name: '23 - Lawrence', image: '23.jpg'},
+	{id: 'Stormy Weather', name: 'Stormy Weather - Lena Horne', image: 'Stormy Weather.jpg'},
+	{id: 'Chichester Psalms & Facsimile', name: 'Chichester Psalms & Facsimile - Leonard Bernstein', image: 'Chichester Psalms & Facsimile.jpg'},
+	{id: 'West Side Story', name: 'West Side Story - Original Broadway Cast', image: 'West Side Story.jpg'},
+	{id: 'Peter Grimes', name: 'Peter Grimes - Leonard Bernstein', image: 'Peter Grimes.jpg'},
+	{id: 'Montero', name: 'Montero - Lil Nas X', image: 'Montero.jpg'},
+	{id: 'Cuz I Love You', name: 'Cuz I Love You - Lizzo', image: 'Cuz I Love You.jpg'},
+	{id: 'Special', name: 'Special - Lizzo', image: 'Special.jpg'},
+	{id: 'Pure Heroine', name: 'Pure Heroine - Lorde', image: 'Pure Heroine.jpg'},
+	{id: 'Lukas Graham', name: 'Lukas Graham - Lukas Graham', image: 'Lukas Graham.jpg'},
+	{id: 'Cleopatra', name: 'Cleopatra - Lumineers', image: 'Cleopatra.jpg'},
+	{id: 'III', name: 'III - Lumineers', image: 'III.jpg'},
+	{id: 'Circles', name: 'Circles - Mac Miller', image: 'Circles.jpg'},
+	{id: 'Divine Feminine', name: 'Divine Feminine - Mac Miller', image: 'Divine Feminine.jpg'},
+	{id: 'The Heist', name: 'The Heist - Macklemore & Ryan Lewis', image: 'The Heist.jpg'},
+	{id: 'Heard It In A Past Life', name: 'Heard It In A Past Life - Maggie Rogers', image: 'Heard It In A Past Life.jpg'},
+	{id: 'What the World Needs Now', name: 'What the World Needs Now - Mahalia Jackson', image: 'What the World Needs Now.jpg'},
+	{id: 'Planet Her', name: 'Planet Her - Doja Cat', image: 'Planet Her.jpg'},
+	{id: 'Pink Friday', name: 'Pink Friday - Nicki Minaj', image: 'Pink Friday.jpg'},
+	{id: 'Songs About Jane', name: 'Songs About Jane - Maroon 5', image: 'Songs About Jane.jpg'},
+	{id: 'Overexposed', name: 'Overexposed - Maroon 5', image: 'Overexposed.jpg'},
+	{id: 'Thank You', name: 'Thank You - Megan Trainor', image: 'Thank You.jpg'},
+	{id: 'Title', name: 'Title - Megan Trainor', image: 'Title.jpg'},
+	{id: 'At the Crescendo', name: 'At the Crescendo - Mel Torme', image: 'At the Crescendo.jpg'},
+	{id: 'It\'s Time', name: 'It\'s Time - Michael Buble', image: 'It\'s Time.jpg'},
+	{id: 'Thriller', name: 'Thriller - Michael Jackson', image: 'Thriller.jpg'},
+	{id: 'One Thing At A Time', name: 'One Thing At A Time - Morgan Wallen', image: 'One Thing At A Time.jpg'},
+	{id: 'Babel', name: 'Babel - Mumford & Sons', image: 'Babel.jpg'},
+	{id: 'The Black Parade', name: 'The Black Parade - My Chemical Romance', image: 'The Black Parade.jpg'},
+	{id: 'Unforgettable', name: 'Unforgettable - Nat King Cole', image: 'Unforgettable.jpg'},
+	{id: 'Picture Show', name: 'Picture Show - Neon Trees', image: 'Picture Show.jpg'},
+	{id: 'Perception', name: 'Perception - NF', image: 'Perception.jpg'},
+	{id: 'The End of Everything', name: 'The End of Everything - Noah Cyrus', image: 'The End of Everything.jpg'},
+	{id: 'The Hardest Part', name: 'The Hardest Part - Noah Cyrus', image: 'The Hardest Part.jpg'},
+	{id: 'Busyhead', name: 'Busyhead - Noah Kahan', image: 'Busyhead.jpg'},
+	{id: 'Stick Season', name: 'Stick Season - Noah Kahan', image: 'Stick Season.jpg'},
+	{id: 'No Strings Attached', name: 'No Strings Attached - NSYNC', image: 'No Strings Attached.jpg'},
+	{id: 'GUTS', name: 'GUTS - Olivia Rodrigo', image: 'GUTS.jpg'},
+	{id: 'Native', name: 'Native - OneRepublic', image: 'Native.jpg'},
+	{id: 'Stampede: Vol. 1', name: 'Stampede: Vol. 1 - Orville Peck', image: 'Stampede_ Vol. 1.jpg'},
+	{id: 'The Truth About Love', name: 'The Truth About Love - P!nk', image: 'The Truth About Love.jpg'},
+	{id: 'Death of a Bachelor', name: 'Death of a Bachelor - Panic! At the Disco', image: 'Death of a Bachelor.jpg'},
+	{id: 'Pray For the Wicked', name: 'Pray For the Wicked - Panic! At the Disco', image: 'Pray For the Wicked.jpg'},
+	{id: 'A Fever You Can\'t Sweat Out', name: 'A Fever You Can\'t Sweat Out - Panic! At the Disco', image: 'A Fever You Can\'t Sweat Out.jpg'},
+	{id: 'Pretty. Odd.', name: 'Pretty. Odd. - Panic! At the Disco', image: 'Pretty. Odd..jpg'},
+	{id: 'Riot!', name: 'Riot! - Paramore', image: 'Riot!.jpg'},
+	{id: 'Stranger in the Alps', name: 'Stranger in the Alps - Phoebe Bridgers', image: 'Stranger in the Alps.jpg'},
+	{id: 'Life in Colour', name: 'Life in Colour - Picture This', image: 'Life in Colour.jpg'},
+	{id: 'Planet Pit', name: 'Planet Pit - Pitbull', image: 'Planet Pit.jpg'},
+	{id: 'Stoney', name: 'Stoney - Post Malone', image: 'Stoney.jpg'},
+	{id: 'Hollywood\'s Bleeding', name: 'Hollywood\'s Bleeding - Post Malone', image: 'Hollywood\'s Bleeding.jpg'},
+	{id: 'A Night at the Opera', name: 'A Night at the Opera - Queen', image: 'A Night at the Opera.jpg'},
+	{id: 'A Letter to My Younger Self', name: 'A Letter to My Younger Self - Quinn XCII', image: 'A Letter to My Younger Self.jpg'},
+	{id: 'Wildfire', name: 'Wildfire - Rachel Platten', image: 'Wildfire.jpg'},
+	{id: 'Rachel', name: 'Rachel - Rachel Willis-Sorensen', image: 'Rachel.jpg'},
+	{id: 'Feels Like Today', name: 'Feels Like Today - Rascal Flatts', image: 'Feels Like Today.jpg'},
+	{id: 'Me and My Gang', name: 'Me and My Gang - Rascal Flatts', image: 'Me and My Gang.jpg'},
+	{id: 'Rationale', name: 'Rationale - Rationale', image: 'Rationale.jpg'},
+	{id: 'Stadium Arcadium', name: 'Stadium Arcadium - Red Hot Chili Peppers', image: 'Stadium Arcadium.jpg'},
+	{id: 'Don\'t You Fake It', name: 'Don\'t You Fake It - Red Jumpsuit Apparatus', image: 'Don\'t You Fake It.jpg'},
+	{id: 'Far', name: 'Far - Regina Spector', image: 'Far.jpg'},
+	{id: 'Everything to Everyone', name: 'Everything to Everyone - Renee Rapp', image: 'Everything to Everyone.jpg'},
+	{id: 'Rent', name: 'Rent - Original Broadway Cast', image: 'Rent.jpg'},
+	{id: 'Loud', name: 'Loud - Rhianna', image: 'Loud.jpg'},
+	{id: 'Unapologetic', name: 'Unapologetic - Rhianna', image: 'Unapologetic.jpg'},
+	{id: 'Phoenix', name: 'Phoenix - Rita Ora', image: 'Phoenix.jpg'},
+	{id: 'Sound of Music', name: 'Sound of Music - Original Broadway Cast', image: 'Sound of Music.jpg'},
+	{id: 'Do You Miss New York?', name: 'Do You Miss New York? - Rosemary Clooney', image: 'Do You Miss New York?.jpg'},
+	{id: 'Singular Act I', name: 'Singular Act I - Sabrina Carpenter', image: 'Singular Act I.jpg'},
+	{id: 'Montevallo', name: 'Montevallo - Sam Hunt', image: 'Montevallo.jpg'},
+	{id: 'In the Lonely Hour', name: 'In the Lonely Hour - Sam Smith', image: 'In the Lonely Hour.jpg'},
+	{id: 'The Thrill of It All', name: 'The Thrill of It All - Sam Smith', image: 'The Thrill of It All.jpg'},
+	{id: 'Linger A While', name: 'Linger A While - Samara Joy', image: 'Linger A While.jpg'},
+	{id: 'The Blessed Unrest', name: 'The Blessed Unrest - Sara Bareilles', image: 'The Blessed Unrest.jpg'},
+	{id: 'Kaleidoscope Heart', name: 'Kaleidoscope Heart - Sara Bareilles', image: 'Kaleidoscope Heart.jpg'},
+	{id: 'Little Voice', name: 'Little Voice - Sara Bareilles', image: 'Little Voice.jpg'},
+	{id: 'Once Upon Another Time', name: 'Once Upon Another Time - Sara Bareilles', image: 'Once Upon Another Time.jpg'},
+	{id: 'Waitress', name: 'Waitress - Sara Bareilles', image: 'Waitress.jpg'},
+	{id: 'Freedom Child', name: 'Freedom Child - The Script', image: 'Freedom Child.jpg'},
+	{id: '#3', name: '#3 - The Script', image: '_3.jpg'},
+	{id: 'A Twist In My Story', name: 'A Twist In My Story - Secondhand Serenade', image: 'A Twist In My Story.jpg'},
+	{id: 'Handwritten', name: 'Handwritten - Shawn Mendes', image: 'Handwritten.jpg'},
+	{id: 'Shawn Mendes', name: 'Shawn Mendes - Shawn Mendes', image: 'Shawn Mendes.jpg'},
+	{id: 'This is Acting', name: 'This is Acting - Sia', image: 'This is Acting.jpg'},
+	{id: 'Still Not Getting Any...', name: 'Still Not Getting Any... - Simple Plan', image: 'Still Not Getting Any....jpg'},
+	{id: 'SIX: Live On Opening Night', name: 'SIX: Live On Opening Night - Original Broadway Cast', image: 'SIX_ Live On Opening Night.jpg'},
+	{id: 'Company', name: 'Company - Original Broadway Cast', image: 'Company.jpg'},
+	{id: 'The Shapes I\'m In', name: 'The Shapes I\'m In - Stephen Day', image: 'The Shapes I\'m In.jpg'},
+	{id: 'Guess I\'m Grown Now', name: 'Guess I\'m Grown Now - Stephen Day', image: 'Guess I\'m Grown Now.jpg'},
+	{id: 'Undergrad Romance and the Moses in Me', name: 'Undergrad Romance and the Moses in Me - Stephen Day', image: 'Undergrad Romance and the Moses in Me.jpg'},
+	{id: 'Angel Face', name: 'Angel Face - Stephen Sanchez', image: 'Angel Face.jpg'},
+	{id: 'Easy On My Eyes', name: 'Easy On My Eyes - Stephen Sanchez', image: 'Easy On My Eyes.jpg'},
+	{id: 'Wicked', name: 'Wicked - Original Broadway Cast', image: 'Wicked.jpg'},
+	{id: 'Rockstarr', name: 'Rockstarr - Taio Cruz', image: 'Rockstarr.jpg'},
+	{id: 'Fearless (Taylor\'s Version)', name: 'Fearless (Taylor\'s Version) - Taylor Swift', image: 'Fearless (Taylor\'s Version).jpg'},
+	{id: 'One X', name: 'One X - Three Days Grace', image: 'One X.jpg'},
+	{id: 'Three Days Grace', name: 'Three Days Grace - Three Days Grace', image: 'Three Days Grace.jpg'},
+	{id: 'Hiding Place', name: 'Hiding Place - Tori Kelly', image: 'Hiding Place.jpg'},
+	{id: 'Unbreakable Smile', name: 'Unbreakable Smile - Tori Kelly', image: 'Unbreakable Smile.jpg'},
+	{id: 'Tracy Chapman', name: 'Tracy Chapman - Tracy Chapman', image: 'Tracy Chapman.jpg'},
+	{id: 'California 37', name: 'California 37 - Train', image: 'California 37.jpg'},
+	{id: 'Blue Neighbourhood', name: 'Blue Neighbourhood - Troye Sivan', image: 'Blue Neighbourhood.jpg'},
+	{id: 'Blurryface', name: 'Blurryface - twenty one pilots', image: 'Blurryface.jpg'},
+	{id: 'Us', name: 'Us - Us the Duo', image: 'Us.jpg'},
+	{id: 'Father of the Bride', name: 'Father of the Bride - Vampire Weekend', image: 'Father of the Bride.jpg'},
+	{id: 'The Addams Family', name: 'The Addams Family - Original Broadway Cast', image: 'The Addams Family.jpg'},
+	{id: 'Chess in Concert', name: 'Chess in Concert - Various artists', image: 'Chess in Concert.jpg'},
+	{id: 'Legally Blonde', name: 'Legally Blonde - Various artists', image: 'Legally Blonde.jpg'},
+	{id: 'Songs for a New World', name: 'Songs for a New World - Various artists', image: 'Songs for a New World.jpg'},
+	{id: 'La Traviata', name: 'La Traviata - Vienna Philharmonic Orchestra', image: 'La Traviata.jpg'},
+	{id: 'Talking is Hard', name: 'Talking is Hard - Walk the Moon', image: 'Talking is Hard.jpg'},
+	{id: 'Walk the Moon', name: 'Walk the Moon - Walk the Moon', image: 'Walk the Moon.jpg'},
+	{id: 'We the Kings', name: 'We the Kings - We the Kings', image: 'We the Kings.jpg'},
+	{id: 'After Hours', name: 'After Hours - The Weekend', image: 'After Hours.jpg'},
+	{id: 'Beauty Beyond the Madness', name: 'Beauty Beyond the Madness - The Weekend', image: 'Beauty Beyond the Madness.jpg'},
+	{id: 'Whitney', name: 'Whitney - Whitney Houston', image: 'Whitney.jpg'},
+	{id: 'VHS', name: 'VHS - X Ambassadors', image: 'VHS.jpg'},
+	{id: 'Orion', name: 'Orion - X Ambassadors', image: 'Orion.jpg'},
+	{id: 'Welcome Home', name: 'Welcome Home - Zac Brown Band', image: 'Welcome Home.jpg'},
+	{id: 'Mind of Mine', name: 'Mind of Mine - Zayn', image: 'Mind of Mine.jpg'},
+	{id: 'Streets of Gold', name: 'Streets of Gold - 3OH!3', image: 'Streets of Gold.jpg'},
+	{id: 'Want', name: 'Want - 3OH!3', image: 'Want.jpg'},
+	{id: 'Call Me Irresponsible', name: 'Call Me Irresponsible - Michael Buble', image: 'Call Me Irresponsible.jpg'},
+	{id: 'Crazy Love', name: 'Crazy Love - Michael Buble', image: 'Crazy Love.jpg'},
+	{id: 'Ocean Avenue', name: 'Ocean Avenue - Yellowcard', image: 'Ocean Avenue.jpg'},
+	{id: 'Enema of the State', name: 'Enema of the State - blink-182', image: 'Enema of the State.jpg'},
+	{id: 'No Pads, No Helmets... Just Balls', name: 'No Pads, No Helmets... Just Balls - Simple Plan', image: 'No Pads, No Helmets...Just Balls.jpg'},
+	{id: 'American Idiot', name: 'American Idiot - Green Day', image: 'American Idiot.jpg'},
+	{id: 'The Best Damn Thing', name: 'The Best Damn Thing - Avril Levine', image: 'The Best Damn Thing.jpg'},
+	{id: 'Astroworld', name: 'Astroworld - Travis Scott', image: 'Astroworld.jpg'},
+	{id: 'Hotel California', name: 'Hotel California - Eagles', image: 'Hotel California.jpg'},
+	{id: 'Confessions', name: 'Confessions - Usher', image: 'Confessions.jpg'},
+	{id: 'Flower Boy', name: 'Flower Boy - Tyler, the Creator', image: 'Flower Boy.jpg'},
+	{id: 'The Fame Monster', name: 'The Fame Monster - Lady Gaga', image: 'The Fame Monster.jpg'},
+	{id: 'Like a Prayer', name: 'Like a Prayer - Madonna', image: 'Like a Prayer.jpg'},
+	{id: 'SOS', name: 'SOS - SZA', image: 'SOS.jpg'},
+	{id: 'Straight Outta Compton', name: 'Straight Outta Compton - NWA', image: 'Straight Outta Compton.jpg'},
+	{id: 'A Love Supreme', name: 'A Love Supreme - John Coltrane', image: 'A Love Supreme.jpg'},
+	{id: 'Take Care', name: 'Take Care - Drake', image: 'Take Care.jpg'},
+	{id: 'I Never Loved A Man the Way I Loved You', name: 'I Never Loved A Man the Way I Loved You - Aretha Franklin', image: 'I Never Loved A Man the Way I Love You.jpg'},
+	{id: 'Carole King', name: 'Carole King - Tapestry', image: 'Carole King.jpg'},
+	{id: 'Fleetwood Mac', name: 'Fleetwood Mac - Rumors', image: 'Fleetwood Mac.jpg'},
+	{id: 'Back to Black', name: 'Back to Black - Amy Winehouse', image: 'Back to Black.jpg'},
+	{id: 'Songs in the Key of Life', name: 'Songs in the Key of Life - Stevie Wonder', image: 'Songs in the Key of Life.jpg'},
+	{id: 'In the Zone', name: 'In the Zone - Britney Spears', image: 'In the Zone.jpg'},
+	{id: 'Breakaway', name: 'Breakaway - Kelly Clarkson', image: 'Breakaway.jpg'},
+	{id: 'Good Girl Gone Bad', name: 'Good Girl Gone Bad - Rhianna', image: 'Good Girl Gone Bad.jpg'},
+	{id: 'Hot Fuss', name: 'Hot Fuss - Killers', image: 'Hot Fuss.jpg'},
+	{id: 'The Fame', name: 'The Fame - Lady Gaga', image: 'The Fame.jpg'},
+	{id: 'Get Rich or Die Tryin', name: 'Get Rich or Die Tryin - 50 Cent', image: 'Get Rich or Die Tryin.jpg'},
+	{id: 'Camila', name: 'Camila - Camila Cabello', image: 'Camila.jpg'},
+	{id: 'Northing but the Beat', name: 'Northing but the Beat - David Guetta', image: 'Northing but the Beat.jpg'},
+	{id: 'Bad Blood', name: 'Bad Blood - Bastille', image: 'Bad Blood.jpg'},
+	{id: 'Hands All Over', name: 'Hands All Over - Maroon 5', image: 'Hands All Over.jpg'},
+	{id: 'Shania Twain', name: 'Shania Twain - Shania Twain', image: 'Shania Twain.jpg'},
+	{id: 'Diamond Rio', name: 'Diamond Rio - Diamond Rio', image: 'Diamond Rio.jpg'},
+	{id: 'Mountain Music', name: 'Mountain Music - Alabama', image: 'Mountain Music.jpg'},
+	{id: 'Super Trouper', name: 'Super Trouper - ABBA', image: 'Super Trouper.jpg'},
+	{id: 'Voulez-Vous', name: 'Voulez-Vous - ABBA', image: 'Voulez-Vous.jpg'},
+	{id: 'Arrival', name: 'Arrival - ABBA', image: 'Arrival.jpg'},
+	{id: 'New Gold Hits', name: 'New Gold Hits - Four Seasons', image: 'New Gold Hits.jpg'},
+	{id: 'Diana Ross Presents the Jackson 5', name: 'Diana Ross Presents the Jackson 5 - Jackson 5', image: 'Diana Ross Presents the Jackson 5.jpg'},
+	{id: 'Bad Girls', name: 'Bad Girls - Donna Summer', image: 'Bad Girls.jpg'},
+	{id: 'Pendulum', name: 'Pendulum - Creedence Clearwater Revival', image: 'Pendulum.jpg'},
+	{id: 'The Stranger', name: 'The Stranger - Billy Joel', image: 'The Stranger.jpg'},
+	{id: 'Heart Like a Wheel', name: 'Heart Like a Wheel - Linda Ronstadt', image: 'Heart Like a Wheel.jpg'},
+	{id: 'Presenting the Fabulous Ronnettes', name: 'Presenting the Fabulous Ronnettes - The Ronettes', image: 'Presenting the Fabulous Ronnettes.jpg'},
+	{id: 'Where Did Our Love Go', name: 'Where Did Our Love Go - The Supremes', image: 'Where Did Our Love Go.jpg'},
+	{id: 'Born in the USA', name: 'Born in the USA - Bruce Springsteen', image: 'Born in the USA.jpg'},
+	{id: 'Diamond Star Halos', name: 'Diamond Star Halos - Def Leppard', image: 'Diamond Star Halos.jpg'},
+	{id: 'Face Value', name: 'Face Value - Phil Collins', image: 'Face Value.jpg'},
+	{id: 'Slippery When Wet', name: 'Slippery When Wet - Bon Jovi', image: 'Slippery When Wet.jpg'},
+	{id: 'Keep the Fire', name: 'Keep the Fire - Kenny Loggins', image: 'Keep the Fire.jpg'},
+	{id: 'Toto IV', name: 'Toto IV - Toto', image: 'Toto IV.jpg'},
+	{id: 'Only By the Night', name: 'Only By the Night - Kings of Leon', image: 'Only By the Night.jpg'},
+	{id: 'Meteora', name: 'Meteora - Linklin Park', image: 'Meteora.jpg'},
+	{id: 'The Dark Side of the Moon', name: 'The Dark Side of the Moon - Pink Floyd', image: 'The Dark Side of the Moon.jpg'},
+	{id: 'Paganini: 24 Caprices', name: 'Paganini: 24 Caprices - Itzhak Perlman', image: 'Paganini_ 24 Caprices.jpg'},
+	{id: 'Paganini: 24 Caprices for Solo Violin, Op. 1 ', name: 'Paganini: 24 Caprices for Solo Violin, Op. 1  - Hilary Hahn', image: 'Paganini_ 24 Caprices for Solo Violin.jpg'},
+	{id: 'Ain\'t That Good News', name: 'Ain\'t That Good News - Sam Cooke', image: 'Ain\'t That Good News.jpg'},
+	{id: 'Good News', name: 'Good News - Megan Thee Stallion', image: 'Good News.jpg'},
+	{id: 'Jolene', name: 'Jolene - Dolly Parton', image: 'Jolene.jpg'},
+	{id: 'In the Heat of the Night', name: 'In the Heat of the Night - Pat Benatar', image: 'In the Heat of the Night.jpg'},
+	{id: 'Glass Houses', name: 'Glass Houses - Billy Joel', image: 'Glass Houses.jpg'},
+	{id: 'Christopher Cross', name: 'Christopher Cross - Christopher Cross', image: 'Christopher Cross.jpg'}
+
+];
+
+var myPicker = new picker.Picker({
+    items: items,
+    localStorageKey: 'picker-state-09',
+    defaultSettings: {
+    	minBatchSize: 2,
+    	maxBatchSize: 2
+    }
+});
+
+var pickerUI = new PickerUI(myPicker, {
+    elements: {
+        pick: "#pick",
+        pass: "#pass",
+        undo: "#undo",
+        redo: "#redo",
+        evaluating: "#evaluating",
+        favorites: "#favorites"
+    }
+});
+
+pickerUI.initialize();
+
+/* Sortable favorites - you can safely remove this, and the Sortable.min.js script, if you don't want to be able to sort your favorite list. */
+var sortable = new Sortable(pickerUI.elem.favorites.get(0), {
+    draggable: '.item',
+    animation: 100,
+    onStart: function() {
+        pickerUI.elem.favorites.addClass("sorting");
+    },
+    onEnd: function() {
+        pickerUI.elem.favorites.removeClass("sorting");
+    },
+    onUpdate: function() {
+        myPicker.setFavorites(pickerUI.elem.favorites.children().map(function() {
+            return pickerUI.getItem(this);
+        }).get());
+        pickerUI.update(true);
+    }
+});
+/* End sortable favorites */
+</script>
+</body>
+</html>
